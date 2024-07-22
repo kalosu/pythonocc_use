@@ -33,6 +33,7 @@ from sklearn.kernel_approximation import RBFSampler
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.linear_model import Ridge,LinearRegression,Lasso
 from sklearn.metrics import r2_score
+from scipy.interpolate import RectBivariateSpline
 
 
 
@@ -45,22 +46,22 @@ def points_to_surf(p,name):
             array.SetValue(i+1,j+1,point_to_add)
     print ("Surface creation")
 ##Least-square based
-    # bspl_surface = GeomAPI_PointsToBSplineSurface(array,Approx_ChordLength,3,8,GeomAbs_C2,1e-4)#.Interpolate(array) ###For fitting
+    bspl_surface = GeomAPI_PointsToBSplineSurface(array,Approx_ChordLength,2,4,GeomAbs_C3,1e-4)#.Interpolate(array) ###For fitting
 
 ##Interpolation based
-    bspl_surface = GeomAPI_PointsToBSplineSurface()#.Interpolate(array)
-    bspl_surface.Interpolate(array,Approx_ChordLength)
+    # bspl_surface = GeomAPI_PointsToBSplineSurface()#.Interpolate(array)
+    # bspl_surface.Interpolate(array,Approx_ChordLength)
     # bspl_surface.Interpolate(array)
     print ("Went through here already")
 
-    face_builder = BRepBuilderAPI_MakeFace(bspl_surface.Surface(),1e-8).Shape()
+    face_builder = BRepBuilderAPI_MakeFace(bspl_surface.Surface(),1e-6).Shape()
 
     c= STEPControl_Controller()
     c.Init()
     step_writer = STEPControl_Writer()
     Interface_Static("write.step.schema","AP214")
     step_writer.Transfer(face_builder,STEPControl_AsIs)
-    filename="compen1_q_res201_dip_meep_to_gauss_ip_visio.step" ##For compensated surface
+    filename="compen_q_res251_dip_meep_to_gauss_ip_visio.step" ##For compensated surface
     # filename="q_displaced_res201_dip_meep_to_gauss_ip_visio.step" ##For design surface
     step_writer.Write(filename)
 
@@ -95,9 +96,9 @@ cmap = 'inferno'
 
 
 # design_pc= "q_surface_ref_z_right_position_cc.txt" ##Original surface profile -> oscillatory boundary
-# design_pc= "surf_q_surface_smooth_c_401.txt" ##Surface profile with smoothed boundary
+design_pc= "surf_q_surface_smooth_c_401.txt" ##Surface profile with smoothed boundary
 design_pc_2 = "surf_ff3_dip_meep_z50nm_to_gaus_res251_n_IP_Visio_v_real_further.txt"
-design_pc = "q_surface_smooth_c_251.txt"
+# design_pc = "q_surface_smooth_c_251.txt"
 measu_pc= "str_3_LP78_upper_surf_normal_cc_xy_trans_xyz_rot.txt" ##reproducibility test structure
 # measu_pc= "LP3_2_upper_surface_avg_1_cc_xy_trans_xyz_rot_z_trans.txt" ##reproducibility test structure ##2
 # measu_pc= "rq_surf_LP5_upper_surface_reference_original_cc_z_trans_only.txt" ##Reference structure after applying z translation only to match the heights
@@ -107,16 +108,30 @@ pcd_measu = o3d.geometry.PointCloud()
 points_measu = np.stack((cf_x_measu.flatten(), cf_y_measu.flatten(), cf_z_measu.flatten()), -1)
 pcd_measu.points = o3d.utility.Vector3dVector(points_measu)
 
-cf_x_design, cf_y_design, cf_z_design= confocal_data_read(filepath + design_pc)
-cf_x_design2, cf_y_design2, cf_z_design2= confocal_data_read(filepath + design_pc_2)
-pcd_design= o3d.geometry.PointCloud()
-points_design= np.stack((cf_x_design.flatten(), cf_y_design.flatten(), cf_z_design.flatten()), -1)
-pcd_design.points = o3d.utility.Vector3dVector(points_design)
+# cf_x_design, cf_y_design, cf_z_design= confocal_data_read(filepath + design_pc)
 
-plt.figure()
-plt.scatter(cf_x_design,cf_y_design,label='Points from point by point construction')
-plt.scatter(cf_x_design2,cf_y_design2,label='Points from spline evaluation')
-plt.legend()
+cf_x_design2, cf_y_design2, cf_z_design2= confocal_data_read(filepath + design_pc_2)
+
+Nx = 251
+Ny = 251
+shape_desired = 401
+
+u = np.linspace(-1.0, 1.0, Nx)
+v = np.linspace(-1.0, 1.0, Ny)
+x_sp = RectBivariateSpline(u, v, cf_x_design2.reshape(Nx, Ny), s=0)
+y_sp = RectBivariateSpline(u, v, cf_y_design2.reshape(Nx, Ny), s=0)
+z_sp = RectBivariateSpline(u, v, cf_z_design2.reshape(Nx, Ny), s=0)
+u2 = np.linspace(-1.0, 1.0, shape_desired)
+v2 = np.linspace(-1.0, 1.0, shape_desired)
+
+cf_x_design = x_sp(u2, v2, grid=True)
+cf_y_design = y_sp(u2, v2, grid=True)
+cf_z_design = z_sp(u2, v2, grid=True)
+
+
+pcd_design= o3d.geometry.PointCloud()
+points_design= np.stack((cf_x_design.flatten(), cf_y_design.flatten(), cf_z_design.flatten()),-1)
+pcd_design.points = o3d.utility.Vector3dVector(points_design)
 
 # pcd_design = o3d.io.read_point_cloud(filepath+target_pc)
 # pcd_measu = o3d.io.read_point_cloud(filepath+source_pc)
@@ -124,7 +139,8 @@ plt.legend()
 
 # o3d.visualization.draw_geometries_with_editing([pcd_design])
 
-design_points = np.asarray(pcd_design.points)
+# design_points = np.asarray(pcd_design.points)
+design_points = points_design
 # measu_points = np.asarray(pcd_measu.points)
 print ("Shape of the point cloud arrays")
 print (design_points.shape)
@@ -440,7 +456,7 @@ plt.title("Compensated surface - Full contributions")
 plt.show()
 
 
-points_poly_fit_compensation_after_g_f = np.stack((design_points[0,:].flatten(), design_points[1,:].flatten(), poly_fit_design_compensation.flatten()), -1)
+points_poly_fit_compensation_after_g_f = np.stack((design_points[0,:].flatten(), design_points[1,:].flatten(), design_points[2,:].flatten()), -1)
 
 points_poly_fit_compensation_after_g_f= points_poly_fit_compensation_after_g_f.swapaxes(0,1)
 #

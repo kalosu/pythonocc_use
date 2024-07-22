@@ -446,9 +446,9 @@ if __name__ == "__main__":
     z_sp_ev = z_sp(u2,v2,grid=True)
 
 
-    surf_x2 = surf_x.reshape(shape_desired,shape_desired)#.transpose()
-    surf_y2 = surf_y.reshape(shape_desired,shape_desired)#.transpose()
-    surf_z2 = surf_z.reshape(shape_desired,shape_desired)#.transpose()
+    surf_x2 = x_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
+    surf_y2 = y_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
+    surf_z2 = z_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
     print ("shape of surf_x2")
     print (surf_x2.shape)
 
