@@ -28,7 +28,7 @@ from OCC.Core.TopoDS import TopoDS_Face
 from OCC.Core.ShapeAnalysis import ShapeAnalysis_Surface,shapeanalysis
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 
-from sklearn.preprocessing import PolynomialFeatures,SplineTransformer
+from sklearn.preprocessing import PolynomialFeatures,SplineTransformer,MinMaxScaler
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.linear_model import Ridge,LinearRegression,Lasso
@@ -46,7 +46,7 @@ def points_to_surf(p,name):
             array.SetValue(i+1,j+1,point_to_add)
     print ("Surface creation")
 ##Least-square based
-    bspl_surface = GeomAPI_PointsToBSplineSurface(array,Approx_ChordLength,2,4,GeomAbs_C3,1e-4)#.Interpolate(array) ###For fitting
+    bspl_surface = GeomAPI_PointsToBSplineSurface(array,Approx_ChordLength,2,4,GeomAbs_C2,5e-3)#.Interpolate(array) ###For fitting
 
 ##Interpolation based
     # bspl_surface = GeomAPI_PointsToBSplineSurface()#.Interpolate(array)
@@ -61,7 +61,7 @@ def points_to_surf(p,name):
     step_writer = STEPControl_Writer()
     Interface_Static("write.step.schema","AP214")
     step_writer.Transfer(face_builder,STEPControl_AsIs)
-    filename="compen_q_res251_dip_meep_to_gauss_ip_visio.step" ##For compensated surface
+    filename="comp_q_res251_poly9_ridge_scaled_icp_based_dip_meep_to_gauss_ip_visio.step" ##For compensated surface
     # filename="q_displaced_res201_dip_meep_to_gauss_ip_visio.step" ##For design surface
     step_writer.Write(filename)
 
@@ -93,14 +93,16 @@ filepath = "D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg
 # filepath ="D:\\white_light_interfer\\LP4\\"
 
 cmap = 'inferno'
+import matplotlib
+
+matplotlib.use('Qt5Agg')
 
 
 # design_pc= "q_surface_ref_z_right_position_cc.txt" ##Original surface profile -> oscillatory boundary
-design_pc= "surf_q_surface_smooth_c_401.txt" ##Surface profile with smoothed boundary
+design_pc= "surf_surf_q_smooth_c_401.txt" ##Surface profile with smoothed boundary
 design_pc_2 = "surf_ff3_dip_meep_z50nm_to_gaus_res251_n_IP_Visio_v_real_further.txt"
 # design_pc = "q_surface_smooth_c_251.txt"
-measu_pc= "str_3_LP78_upper_surf_normal_cc_xy_trans_xyz_rot.txt" ##reproducibility test structure
-# measu_pc= "LP3_2_upper_surface_avg_1_cc_xy_trans_xyz_rot_z_trans.txt" ##reproducibility test structure ##2
+measu_pc= "str_3_LP78_upper_surf_normal_cc_xy_trans_xyz_rot_z_trans.txt"
 # measu_pc= "rq_surf_LP5_upper_surface_reference_original_cc_z_trans_only.txt" ##Reference structure after applying z translation only to match the heights
 
 cf_x_measu, cf_y_measu, cf_z_measu = confocal_data_read(filepath + measu_pc)
@@ -108,25 +110,23 @@ pcd_measu = o3d.geometry.PointCloud()
 points_measu = np.stack((cf_x_measu.flatten(), cf_y_measu.flatten(), cf_z_measu.flatten()), -1)
 pcd_measu.points = o3d.utility.Vector3dVector(points_measu)
 
-# cf_x_design, cf_y_design, cf_z_design= confocal_data_read(filepath + design_pc)
+cf_x_design, cf_y_design, cf_z_design= confocal_data_read(filepath + design_pc)
 
-cf_x_design2, cf_y_design2, cf_z_design2= confocal_data_read(filepath + design_pc_2)
+cf_x_design2, cf_y_design2, cf_z_design2= confocal_data_read(filepath + design_pc)
 
 Nx = 251
 Ny = 251
-shape_desired = 401
+# u = np.linspace(-1.0, 1.0, Nx)
+# v = np.linspace(-1.0, 1.0, Ny)
+# x_sp = RectBivariateSpline(u, v, cf_x_design2.reshape(Nx, Ny), s=0)
+# y_sp = RectBivariateSpline(u, v, cf_y_design2.reshape(Nx, Ny), s=0)
+# z_sp = RectBivariateSpline(u, v, cf_z_design2.reshape(Nx, Ny), s=0)
+# u2 = np.linspace(-1.0, 1.0, shape_desired)
+# v2 = np.linspace(-1.0, 1.0, shape_desired)
 
-u = np.linspace(-1.0, 1.0, Nx)
-v = np.linspace(-1.0, 1.0, Ny)
-x_sp = RectBivariateSpline(u, v, cf_x_design2.reshape(Nx, Ny), s=0)
-y_sp = RectBivariateSpline(u, v, cf_y_design2.reshape(Nx, Ny), s=0)
-z_sp = RectBivariateSpline(u, v, cf_z_design2.reshape(Nx, Ny), s=0)
-u2 = np.linspace(-1.0, 1.0, shape_desired)
-v2 = np.linspace(-1.0, 1.0, shape_desired)
-
-cf_x_design = x_sp(u2, v2, grid=True)
-cf_y_design = y_sp(u2, v2, grid=True)
-cf_z_design = z_sp(u2, v2, grid=True)
+# cf_x_design = x_sp(u2, v2, grid=True)
+# cf_y_design = y_sp(u2, v2, grid=True)
+# cf_z_design = z_sp(u2, v2, grid=True)
 
 
 pcd_design= o3d.geometry.PointCloud()
@@ -231,7 +231,7 @@ points_low_freq = np.stack((measu_points[:,0].flatten(), measu_points[:,1].flatt
 pcd_low_freq_comps.points = o3d.utility.Vector3dVector(points_low_freq)
 o3d.visualization.draw_geometries_with_editing([pcd_low_freq_comps])
 
-plot_freq_comps = False
+plot_freq_comps =True
 
 if plot_freq_comps:
 
@@ -261,16 +261,21 @@ if plot_freq_comps:
     plt.title("Measured surface - Full contributions")
     plt.show()
 
-# poly = SplineTransformer(n_knots=m,degree=5) ##Spline based basis function regression
+# poly = SplineTransformer(n_knots=m,degree=3) ##Spline based basis function regression
 # poly= RBFSampler(gamma=1e-3)
-poly = PolynomialFeatures(6) ##Polynomial based basis function regression
+
+min_max_scaler = MinMaxScaler()
+xy_data_minmax = min_max_scaler.fit_transform(xy_data)
+
+
+poly = PolynomialFeatures(9,include_bias=False) ##Polynomial based basis function regression
 # X_poly = poly.fit_transform(xy_data)
-X_poly = poly.fit_transform(xy_data)
+X_poly = poly.fit_transform(xy_data_minmax)
 
 # ridge = LinearRegression()
-# ridge = Lasso(alpha=3)
+# ridge = Lasso(alpha=1)
 
-ridge = Ridge(alpha=4)
+ridge = Ridge(alpha=1e-4)
 ridge.fit(X_poly,measu_points[:,2].flatten())
 
 
@@ -339,7 +344,10 @@ plt.show()
 print ("We want now to try evaluating the polynomial expressions but at the coordinates defined by the design surface")
 xy_design = np.vstack([design_points[:,0].flatten(),design_points[:,1].flatten()]).T
 
-X_new_poly = poly.transform(xy_design)
+
+xy_new_minmax = min_max_scaler.transform(xy_design)
+
+X_new_poly = poly.transform(xy_new_minmax)
 
 z_fitted_design = ridge.predict(X_new_poly)
 
@@ -421,42 +429,8 @@ print (design_points.shape)
 # print ("shape of entry array for step surface")
 print (points_poly_fit_compensation.shape)
 
-design_comp_z_low_pass_filter= gaussian_filter(poly_fit_design_compensation,sigma=8.0)
-print ("shape of design_comp_z_low_pass_filter")
-print (design_comp_z_low_pass_filter.shape)
 
-design_comp_z_high_comps = poly_fit_design_compensation - design_comp_z_low_pass_filter
-
-fig = plt.figure()
-ax1 = fig.add_subplot(121)
-divider = make_axes_locatable(ax1)
-cax = divider.append_axes('right', size='5%', pad=0.05)
-im = ax1.tricontour(design_points[0,:].flatten(), design_points[1,:].flatten(),
-                    design_comp_z_low_pass_filter.flatten(), levels=50, cmap=cmap)
-plt.colorbar(im, cax=cax, orientation='vertical')
-plt.title("Compensated surface - Low frequency contributions")
-#
-# fig = plt.figure()
-ax2 = fig.add_subplot(122)
-divider2 = make_axes_locatable(ax2)
-cax2 = divider2.append_axes('right', size='5%', pad=0.05)
-im2 = ax2.tricontour(design_points[0,:].flatten(), design_points[1,:].flatten(), design_comp_z_high_comps.flatten(),
-                     levels=50, cmap=cmap)
-plt.colorbar(im2, cax=cax2, orientation='vertical')
-plt.title("Compensated surface - High frequency contributions")
-#
-#
-fig = plt.figure()
-ax1 = fig.add_subplot()
-divider = make_axes_locatable(ax1)
-cax = divider.append_axes('right', size='5%', pad=0.05)
-im = ax1.tricontour(design_points[0,:], design_points[1,:], poly_fit_design_compensation, levels=50, cmap=cmap)
-plt.colorbar(im, cax=cax, orientation='vertical')
-plt.title("Compensated surface - Full contributions")
-plt.show()
-
-
-points_poly_fit_compensation_after_g_f = np.stack((design_points[0,:].flatten(), design_points[1,:].flatten(), design_points[2,:].flatten()), -1)
+points_poly_fit_compensation_after_g_f = np.stack((design_points[0,:].flatten(), design_points[1,:].flatten(), poly_fit_design_compensation.flatten()), -1)
 
 points_poly_fit_compensation_after_g_f= points_poly_fit_compensation_after_g_f.swapaxes(0,1)
 #

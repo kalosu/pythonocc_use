@@ -4,10 +4,11 @@ import open3d as o3d
 
 if __name__=="__main__":
 
-    filepath = "D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg\\"
+    # filepath = "D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg\\" ###White light interferometer based measurement data
+    filepath = "D:\\Confocal_measurements\\beam_shaping_project\\q_surface_40x_ip_visio_w_markers_extended_hatching_offset_30deg_compen\\str_3_LP_80\\"
 
-    cropped_flag = True
-    not_corrected= True
+    cropped_flag = False
+    not_corrected= False
     if cropped_flag:
         filename_2 = "str_3_LP78_upper_surf_normal.ply" ###ply file after editing
         pcd = o3d.io.read_point_cloud(filepath + filename_2)
@@ -16,10 +17,10 @@ if __name__=="__main__":
         cf_y2 = points[:,1]
         cf_z2 = points[:,2]
     else:
-        filename_2 = "str_3_LP78_upper_surf_normal.txt"
+        filename_2 = "str_3_LP_80_upper_surface.txt"
         cf_x2, cf_y2, cf_z2 = confocal_data_read(filepath+filename_2)
 
-    filename = "str_3_LP78_full_length.txt"
+    filename = "str_3_LP_80_full_surface.txt"
     # filename_2 = "rq_surf_LP5_upper_surface.txt"
 
     cf_x1, cf_y1, cf_z1 = confocal_data_read(filepath+filename)

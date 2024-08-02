@@ -30,6 +30,8 @@ s3, N3 = surf_params_sN_read(filename3)
 
 # cf_x_design, cf_y_design, cf_z_design= confocal_data_read(filepath + design_pc)
 cf_x_design = s3[0,:]
+print ("shape of cf_x_design")
+print (np.sqrt(cf_x_design.shape))
 cf_y_design = s3[1,:]
 cf_z_design = s3[2,:]
 
@@ -212,7 +214,7 @@ surf_points = np.stack((d_x_c.flatten(),d_y_c.flatten(),d_z_c.flatten()))
 # surf = ax.scatter(d_x,d_y,d_z)
 # plt.title("Original surface points")
 ##Finally, we save the coordinates of the modified surface
-# surf_param_sN_save(surf_points,surf_points,"ff3_dip_meep_z50nm_to_gaus_res251_n_IP_Visio_smooth_boundary")
+surf_param_sN_save(surf_points,surf_points,"surf_q_smooth_c_401")
 
 
 
