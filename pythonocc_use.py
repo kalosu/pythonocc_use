@@ -265,9 +265,9 @@ def points_to_surf_inter(p,name):
     #     array.SetValue(i+1,gp_Pnt(*p[:,i]))
 
     print ("Surface creation")
-    # bspl_surface = GeomAPI_PointsToBSplineSurface(array,Approx_IsoParametric,3,8,GeomAbs_C2,1e-4)#.Interpolate(array)
-    bspl_surface = GeomAPI_PointsToBSplineSurface()#.Interpolate(array)
-    bspl_surface.Interpolate(array,Approx_ChordLength)
+    bspl_surface = GeomAPI_PointsToBSplineSurface(array,Approx_IsoParametric,3,5,GeomAbs_C3,1e-5)#.Interpolate(array)
+    # bspl_surface = GeomAPI_PointsToBSplineSurface()#.Interpolate(array)
+    # bspl_surface.Interpolate(array,Approx_ChordLength)
     # bspl_surface2 = GeomAPI_PointsToBSplineSurface(array,3,8,GeomAbs_C2,1e-4)
     face_builder = BRepBuilderAPI_MakeFace(bspl_surface.Surface(),1e-6).Shape()
 
@@ -279,13 +279,13 @@ def points_to_surf_inter(p,name):
     Interface_Static("write.step.schema","AP214")
     step_writer.Transfer(face_builder,STEPControl_AsIs)
     filename="ptg_" + name + "_res251.step"
-    # step_writer.Write(filename)
+    step_writer.Write(filename)
     display.DisplayShape(bspl_surface.Surface(),update=True)
     # for i in range(0,p.shape[1],1):
     #     for j in range(0,p.shape[2],1):
-    #         point_to_add = gp_Pnt(p[0,i,j],p[1,i,j],p[2,i,j]-p_center)
+    #         point_to_add = gp_Pnt(p[0,i,j],p[1,i,j],p[2,i,j])
     #         display.DisplayShape(point_to_add,update=False)
-    # display.Repaint()
+    display.Repaint()
     return bspl_surface.Surface()
 
 def build_points_network(bspl_srf):
@@ -413,6 +413,8 @@ if __name__ == "__main__":
 
     s2, N2 = surf_params_sN_read(filename2)
     s3, N3 = surf_params_sN_read(filename3)
+
+    s_single, N_single = surf_params_sN_read("rect_to_circ_L2_OMT_surf")
     print ("shape of s3")
     print (s3.shape)
     Nx2 = 594
@@ -421,7 +423,7 @@ if __name__ == "__main__":
     display, start_display, add_menu, add_function_to_menu = init_display()
 
 
-    spline_surf = points_to_surf_inter((s3).reshape(3,Nx,Ny),"q_smooth")
+    spline_surf = points_to_surf_inter((s_single).reshape(3,Nx,Ny),"s_single_OMT")
 
     shape_desired = 251
 
@@ -433,39 +435,39 @@ if __name__ == "__main__":
     # shape_desired = int(np.sqrt(surf_x.shape[0]))
 
     ##We try to use the RectBivariateSpline to upsample the points using the original distribution of points
-    u = np.linspace(-1.0,1.0,Nx)
-    v = np.linspace(-1.0,1.0,Nx)
-    x_sp = RectBivariateSpline(u,v,s3[0,:].reshape(Nx,Ny),s=0)
-    y_sp = RectBivariateSpline(u,v,s3[1,:].reshape(Nx,Ny),s=0)
-    z_sp = RectBivariateSpline(u,v,s3[2,:].reshape(Nx,Ny),s=0)
-    u2 = np.linspace(-1.0,1.0,shape_desired)
-    v2 = np.linspace(-1.0,1.0,shape_desired)
-
-    x_sp_ev = x_sp(u2,v2,grid=True)
-    y_sp_ev = y_sp(u2,v2,grid=True)
-    z_sp_ev = z_sp(u2,v2,grid=True)
-
-
-    surf_x2 = x_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
-    surf_y2 = y_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
-    surf_z2 = z_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
-    print ("shape of surf_x2")
-    print (surf_x2.shape)
-
-    s3_2 = np.stack((surf_x2.flatten(),surf_y2.flatten(),surf_z2.flatten()))
+    # u = np.linspace(-1.0,1.0,Nx)
+    # v = np.linspace(-1.0,1.0,Nx)
+    # x_sp = RectBivariateSpline(u,v,s3[0,:].reshape(Nx,Ny),s=0)
+    # y_sp = RectBivariateSpline(u,v,s3[1,:].reshape(Nx,Ny),s=0)
+    # z_sp = RectBivariateSpline(u,v,s3[2,:].reshape(Nx,Ny),s=0)
+    # u2 = np.linspace(-1.0,1.0,shape_desired)
+    # v2 = np.linspace(-1.0,1.0,shape_desired)
+    #
+    # x_sp_ev = x_sp(u2,v2,grid=True)
+    # y_sp_ev = y_sp(u2,v2,grid=True)
+    # z_sp_ev = z_sp(u2,v2,grid=True)
 
 
-    display, start_display, add_menu, add_function_to_menu = init_display()
+    # surf_x2 = x_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
+    # surf_y2 = y_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
+    # surf_z2 = z_sp_ev.reshape(shape_desired,shape_desired)#.transpose()
+    # print ("shape of surf_x2")
+    # print (surf_x2.shape)
 
-    spline_surf_2 = points_to_surf((s3_2).reshape(3,shape_desired,shape_desired),"q_smooth",Approx_IsoParametric)
-
-    start_display()
+    # s3_2 = np.stack((surf_x2.flatten(),surf_y2.flatten(),surf_z2.flatten()))
 
 
-    filepath="C:\\Users\\itojimenez\\PycharmProjects\\pythonocc\\dip_meep_to_gauss_ip_visio_res251\\"
+    # display, start_display, add_menu, add_function_to_menu = init_display()
+
+    # spline_surf_2 = points_to_surf((s3_2).reshape(3,shape_desired,shape_desired),"q_smooth",Approx_IsoParametric)
+
+    # start_display()
 
 
-    xyz_surf_save(surf_x2.flatten(),surf_y2.flatten(),surf_z2.flatten(),filepath+"q_surface_smooth_c_251.txt")
+    # filepath="C:\\Users\\itojimenez\\PycharmProjects\\pythonocc\\dip_meep_to_gauss_ip_visio_res251\\"
+
+
+    # xyz_surf_save(surf_x2.flatten(),surf_y2.flatten(),surf_z2.flatten(),filepath+"q_surface_smooth_c_251.txt")
 
 
 

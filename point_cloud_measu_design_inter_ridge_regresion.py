@@ -61,9 +61,10 @@ def points_to_surf(p,name):
     step_writer = STEPControl_Writer()
     Interface_Static("write.step.schema","AP214")
     step_writer.Transfer(face_builder,STEPControl_AsIs)
-    filename="comp_q_res251_poly9_ridge_scaled_icp_based_dip_meep_to_gauss_ip_visio.step" ##For compensated surface
+    # filename="comp_q_res251_poly9_ridge_scaled_icp_based_dip_meep_to_gauss_ip_visio.step" ##For compensated surface
+
     # filename="q_displaced_res201_dip_meep_to_gauss_ip_visio.step" ##For design surface
-    step_writer.Write(filename)
+    step_writer.Write(name)
 
     display.DisplayShape(bspl_surface.Surface(),update=True)
     # for i in range(0,p.shape[1],1):
@@ -88,9 +89,10 @@ def inpolygon(xq, yq, xv, yv):
 
 # filepath ="D:\\Confocal_measurements\\beam_shaping_project\\q_surface_40x_ip_visio_20240628\\structure_3_LP_84_83_ss_70k\\adjusted_area_adjusted_orientation_confocal\\" ##From confocal measurements
 
-# filepath = "D:\\white_light_interfer\\rq_surface_extended_comp_q_exposed_20240715\\rq_surf_LP5\\" ##Reference first structure
-filepath = "D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg\\"
-# filepath ="D:\\white_light_interfer\\LP4\\"
+# filepath = "D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg\\" ##In this folder we find the reference file that was used to generate the first correction, i.e, the first iteration
+# filepath = "D:\\white_light_interfer\\rq_surf_offset_hatching_30_deg_iter_2\\with_icp\\" ##White light interferometer based measurement
+filepath = "D:\\Confocal_measurements\\beam_shaping_project\\rq_surface_iterations\\rq_lens_hatchin_offset_30_deg_iter_2\\no_icp\\"
+design_filepath ="D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg\\"
 
 cmap = 'inferno'
 import matplotlib
@@ -100,9 +102,7 @@ matplotlib.use('Qt5Agg')
 
 # design_pc= "q_surface_ref_z_right_position_cc.txt" ##Original surface profile -> oscillatory boundary
 design_pc= "surf_surf_q_smooth_c_401.txt" ##Surface profile with smoothed boundary
-design_pc_2 = "surf_ff3_dip_meep_z50nm_to_gaus_res251_n_IP_Visio_v_real_further.txt"
-# design_pc = "q_surface_smooth_c_251.txt"
-measu_pc= "str_3_LP78_upper_surf_normal_cc_xy_trans_xyz_rot_z_trans.txt"
+measu_pc= "no_icp_upper_surface_measu_cc_xy_trans_xyz_rot.txt"
 # measu_pc= "rq_surf_LP5_upper_surface_reference_original_cc_z_trans_only.txt" ##Reference structure after applying z translation only to match the heights
 
 cf_x_measu, cf_y_measu, cf_z_measu = confocal_data_read(filepath + measu_pc)
@@ -110,9 +110,9 @@ pcd_measu = o3d.geometry.PointCloud()
 points_measu = np.stack((cf_x_measu.flatten(), cf_y_measu.flatten(), cf_z_measu.flatten()), -1)
 pcd_measu.points = o3d.utility.Vector3dVector(points_measu)
 
-cf_x_design, cf_y_design, cf_z_design= confocal_data_read(filepath + design_pc)
+cf_x_design, cf_y_design, cf_z_design= confocal_data_read(design_filepath+ design_pc)
 
-cf_x_design2, cf_y_design2, cf_z_design2= confocal_data_read(filepath + design_pc)
+# cf_x_design2, cf_y_design2, cf_z_design2= confocal_data_read(filepath + design_pc)
 
 Nx = 251
 Ny = 251
@@ -268,14 +268,18 @@ min_max_scaler = MinMaxScaler()
 xy_data_minmax = min_max_scaler.fit_transform(xy_data)
 
 
-poly = PolynomialFeatures(9,include_bias=False) ##Polynomial based basis function regression
+# poly = PolynomialFeatures(6,include_bias=False) ##Polynomial based basis function regression -> Original polynomial order: 9
+poly = PolynomialFeatures(9) ##Polynomial based basis function regression -> Original polynomial order: 9
+# poly = PolynomialFeatures(4,include_bias=False) ##Polynomial based basis function regression
 # X_poly = poly.fit_transform(xy_data)
 X_poly = poly.fit_transform(xy_data_minmax)
 
 # ridge = LinearRegression()
-# ridge = Lasso(alpha=1)
+# ridge = Lasso(alpha=1e-3,max_iter=50000)
 
-ridge = Ridge(alpha=1e-4)
+
+ridge = Ridge(alpha=1e-1)
+# ridge = Ridge(alpha=1e-4)
 ridge.fit(X_poly,measu_points[:,2].flatten())
 
 
@@ -438,9 +442,11 @@ points_poly_fit_compensation_after_g_f= points_poly_fit_compensation_after_g_f.s
 display, start_display, add_menu, add_function_to_menu = init_display()
 #
 Nx = int(np.sqrt(design_points.shape[1]))
+
+name = filepath + "no_icp_orig_iter_2.STEP"
 #
 #
-q_surf = points_to_surf(points_poly_fit_compensation_after_g_f.reshape(3,Nx,Nx),'name')
+q_surf = points_to_surf(points_poly_fit_compensation_after_g_f.reshape(3,Nx,Nx),name)
 #
 start_display()
 

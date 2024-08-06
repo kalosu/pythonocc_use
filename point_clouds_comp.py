@@ -5,22 +5,23 @@ import open3d as o3d
 if __name__=="__main__":
 
     # filepath = "D:\\white_light_interfer\\rq_surface_extended_offset_hatching_30_deg\\" ###White light interferometer based measurement data
-    filepath = "D:\\Confocal_measurements\\beam_shaping_project\\q_surface_40x_ip_visio_w_markers_extended_hatching_offset_30deg_compen\\str_3_LP_80\\"
+    # filepath ="D:\\white_light_interfer\\rq_surf_offset_hatching_30_deg_iter_2\\no_icp\\"
+    filepath ="D:\\Confocal_measurements\\beam_shaping_project\\rq_surface_iterations\\rq_lens_hatchin_offset_30_deg_iter_2\\with_icp\\"
 
-    cropped_flag = False
-    not_corrected= False
+    cropped_flag = True
+    not_corrected= True
     if cropped_flag:
-        filename_2 = "str_3_LP78_upper_surf_normal.ply" ###ply file after editing
+        filename_2 = "with_icp_upper_surface_measu.ply" ###ply file after editing
         pcd = o3d.io.read_point_cloud(filepath + filename_2)
         points = np.asarray(pcd.points)
         cf_x2 = points[:,0]
         cf_y2 = points[:,1]
         cf_z2 = points[:,2]
     else:
-        filename_2 = "str_3_LP_80_upper_surface.txt"
+        filename_2 = "with_icp_upper_surface_measu.txt"
         cf_x2, cf_y2, cf_z2 = confocal_data_read(filepath+filename_2)
 
-    filename = "str_3_LP_80_full_surface.txt"
+    filename = "with_icp_full_surface.txt"
     # filename_2 = "rq_surf_LP5_upper_surface.txt"
 
     cf_x1, cf_y1, cf_z1 = confocal_data_read(filepath+filename)
